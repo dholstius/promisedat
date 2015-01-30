@@ -14,9 +14,6 @@ for (.name in names(datasets)) {
   # in real world, we'd fetch a table here
   dat <- get(datasets[[.name]])                      
   
-  # NOTE: next chunk will use these bindings in call to save()
-  assign(.name, dat, envir = .GlobalEnv) 
-  
   # write to CSV file (in pkg extdata/)
   # NOTE: use of file.path() means you have to knit() me from pkg root
   csv_file <- force(paste0(.name, ".csv"))
