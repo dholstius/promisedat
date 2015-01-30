@@ -1,13 +1,65 @@
 ---
-title: "data-raw"
+title: "promisedat"
 author: "David Holstius"
 date: "January 30, 2015"
 output: html_document
 ---
 
+```{r wd}
+getwd() # if clicked "Knit HTML" then this is "data-raw" (why?)
+```
+
+```{r}
+library(devtools)
+inst("promisedat") # if not yet installed then this is NULL
+system.file(package = "promisedat") # if not yet installed then this is ""
+```
+
+## HACK so both "Run Chunk" and "Knit HTML" will work
+
+```{r dev_path}
+if (file.exists("data")) {
+  pkg_root <- "." 
+} else if (file.exists(file.path("..", "data"))) {
+  pkg_root <- ".." # we're in data-raw/, or maybe vignettes/ 
+} else {
+  stop("We're lost")
+}
+
+dev_path <- function (...) {
+  message("dev_path(): ", file.path(pkg_root))
+  normalizePath(file.path(pkg_root, ...))
+}
+
+dev_path("data")
+```
+
+## To find `inst/` whether installed or not (yet) 
+
+```{r inst_path}
+# Prefers installed version but falls back to dev if not yet installed
+inst_path <- function (...) {
+  path <- system.file(package = "promisedat")
+  if (nchar(path) == 0) {
+    warning("package not yet installed")
+    path <- dev_path("inst")
+  }
+  message("inst_path(): ", path)
+  normalizePath(file.path(path, ...))
+}
+
+inst_path("extdata")
+```
+
+## The magic
+
 ```{r}
 # in real world, these are DB table names
 datasets <- c(my_cars = "cars", my_iris = "iris")
+
+my_env <- new.env()
+assign("dev_path", dev_path, envir = my_env)
+assign("inst_path", inst_path, envir = my_env)
 
 for (.name in names(datasets)) {
   
@@ -17,15 +69,18 @@ for (.name in names(datasets)) {
   # write to CSV file (in pkg extdata/)
   # NOTE: use of file.path() means you have to knit() me from pkg root
   csv_file <- force(paste0(.name, ".csv"))
-  write.csv(dat, file = file.path("inst", "extdata", csv_file))
+  write.csv(dat, file = inst_path("extdata", csv_file))
   
   # create promise to read it
-  promise_env <- new.env()               
+  promise_env <- new.env(parent = my_env)               
   assign("csv_file", csv_file, envir = promise_env)
   delayedAssign(
     .name, 
-    read.csv(system.file("extdata", csv_file, package = "promisedat")),
-    assign.env = .GlobalEnv, 
+    {
+      fn <- inst_path("extdata", csv_file)
+      if (!file.exists(fn)) warning(fn, " doesn't exist") else read.csv(fn)
+    },
+    assign.env = my_env, 
     eval.env = promise_env)
 
 }
@@ -34,6 +89,7 @@ for (.name in names(datasets)) {
 ```{r}
 save(
   list = names(datasets), 
-  file = file.path("data", "promisedat.rda"), 
+  envir = my_env,
+  file = dev_path("data", "promisedat.rda"), 
   eval.promises = FALSE)
 ```
