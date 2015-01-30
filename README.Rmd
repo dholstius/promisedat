@@ -1,0 +1,41 @@
+---
+title: "README"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{README}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## Preamble
+
+- Look in `system.file("extdata", package = "promisedat")` for the actual CSV files
+- Look in `data-raw/` for the code that creates the CSV files.
+- `promisedat.rda` contains only promises to read CSV files, so it is only `file.info(file.path("data", "promisedat.rda"))$size` bytes.
+
+```{r}
+library(printr)
+library(devtools)
+```
+
+## This works
+
+```{r}
+install()
+data(package = "promisedat")
+```
+
+
+```{r}
+library(promisedat)
+glimpse(my_cars)
+```
+
+## This doesn't seem to work
+
+- why does `document()` fail when `install()` works?
+
+```{r error = TRUE, warning = TRUE}
+document()
+```

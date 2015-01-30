@@ -1,0 +1,42 @@
+---
+title: "data-raw"
+author: "David Holstius"
+date: "January 30, 2015"
+output: html_document
+---
+
+```{r}
+# in real world, these are DB table names
+datasets <- c(my_cars = "cars", my_iris = "iris")
+
+for (.name in names(datasets)) {
+  
+  # in real world, we'd fetch a table here
+  dat <- get(datasets[[.name]])                      
+  
+  # NOTE: next chunk will use these bindings in call to save()
+  assign(.name, dat, envir = .GlobalEnv) 
+  
+  # write to CSV file (in pkg extdata/)
+  # NOTE: use of file.path() means you have to knit() me from pkg root
+  csv_file <- force(paste0(.name, ".csv"))
+  write.csv(dat, file = file.path("inst", "extdata", csv_file))
+  
+  # create promise to read it
+  promise_env <- new.env()               
+  assign("csv_file", csv_file, envir = promise_env)
+  delayedAssign(
+    .name, 
+    read.csv(system.file("extdata", csv_file, package = "promisedat")),
+    assign.env = .GlobalEnv, 
+    eval.env = promise_env)
+
+}
+```
+
+```{r}
+save(
+  list = names(datasets), 
+  file = file.path("data", "promisedat.rda"), 
+  eval.promises = FALSE)
+```
