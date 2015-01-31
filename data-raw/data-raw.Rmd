@@ -33,7 +33,7 @@ file.path("data")
 inst_path <- function (...) {
   path <- devtools::inst("promisedat")
   if (is.null(path)) path <- file.path("inst") # ./inst or ../inst (see prev chunk)
-  file.path(path, ...)
+  base::file.path(path, ...)
 }
 
 inst_path("extdata")
