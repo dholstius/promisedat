@@ -19,23 +19,9 @@ library(printr)
 library(devtools)
 ```
 
-## This works
+## Example
 
 ```{r}
-install()
-data(package = "promisedat")
-```
-
-
-```{r}
-library(promisedat)
+if (!require(promisedat)) load_all()
 glimpse(my_cars)
-```
-
-## This doesn't seem to work
-
-- why does `document()` fail when `install()` works?
-
-```{r error = TRUE, warning = TRUE}
-document()
 ```
