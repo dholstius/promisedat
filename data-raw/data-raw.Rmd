@@ -17,35 +17,41 @@ system.file(package = "promisedat") # if not yet installed then this is ""
 
 ## HACK so both "Run Chunk" and "Knit HTML" will work
 
-```{r dev_path}
+```{r rel_path}
 if (file.exists("data")) {
   pkg_root <- "." 
 } else if (file.exists(file.path("..", "data"))) {
-  pkg_root <- ".." # we're in data-raw/, or maybe vignettes/ 
+  pkg_root <- ".." # we're in data-raw/
 } else {
   stop("We're lost")
 }
 
-dev_path <- function (...) {
-  message("dev_path(): ", file.path(pkg_root))
-  normalizePath(file.path(pkg_root, ...))
+rel_path <- function (...) {
+  message("rel_path(): ", file.path(pkg_root))
+  file.path(pkg_root, ...)
 }
 
-dev_path("data")
+rel_path("data")
 ```
 
 ## To find `inst/` whether installed or not (yet) 
 
 ```{r inst_path}
-# Prefers installed version but falls back to dev if not yet installed
+# Prefer installed version but fall back to ./inst if not yet installed
 inst_path <- function (...) {
   path <- system.file(package = "promisedat")
+  message('inst_path(): `system.file(package = "promisedat")` is "', path, '"')
   if (nchar(path) == 0) {
-    warning("package not yet installed")
-    path <- dev_path("inst")
+     # why does this even happen?
+    warning('`system.file(package = "promisedat")` yielded ""; using "." instead')
+    path <- "."
   }
-  message("inst_path(): ", path)
-  normalizePath(file.path(path, ...))
+  if (!stringr::str_detect(path, stringr::ignore.case("inst$"))) {
+    # happens during 1st load_all() but not the 2nd time
+    warning('appending "inst"') 
+    path <- file.path(path, "inst")
+  }
+  file.path(path, ...)
 }
 
 inst_path("extdata")
@@ -53,12 +59,12 @@ inst_path("extdata")
 
 ## The magic
 
-```{r}
+```{r eval = TRUE}
 # in real world, these are DB table names
 datasets <- c(my_cars = "cars", my_iris = "iris")
 
 my_env <- new.env()
-assign("dev_path", dev_path, envir = my_env)
+assign("rel_path", rel_path, envir = my_env)
 assign("inst_path", inst_path, envir = my_env)
 
 for (.name in names(datasets)) {
@@ -66,10 +72,9 @@ for (.name in names(datasets)) {
   # in real world, we'd fetch a table here
   dat <- get(datasets[[.name]])                      
   
-  # write to CSV file (in pkg extdata/)
-  # NOTE: use of file.path() means you have to knit() me from pkg root
+  # write to CSV file in pkg inst/extdata/
   csv_file <- force(paste0(.name, ".csv"))
-  write.csv(dat, file = inst_path("extdata", csv_file))
+  write.csv(dat, file = rel_path("inst", "extdata", csv_file))
   
   # create promise to read it
   promise_env <- new.env(parent = my_env)               
@@ -84,12 +89,17 @@ for (.name in names(datasets)) {
     eval.env = promise_env)
 
 }
-```
 
-```{r}
 save(
   list = names(datasets), 
   envir = my_env,
-  file = dev_path("data", "promisedat.rda"), 
+  file = rel_path("data", "promisedat.rda"), 
   eval.promises = FALSE)
+```
+
+## `load_all()` isn't idempotent
+
+```{r}
+load_all(rel_path())
+load_all(rel_path())
 ```
