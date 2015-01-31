@@ -19,7 +19,7 @@ system.file(package = "promisedat") # if not yet installed then this is ""
 
 ```{r file.path}
 if (!file.exists("data")) {
-  warning("monkeypunching file.path since pkg root != ", getwd())
+  warning("monkeypunching file.path")
   file.path <- function (...) base::file.path("..", ...)
 }
   
@@ -32,7 +32,7 @@ file.path("data")
 # Prefer installed version but fall back to ./inst if not yet installed
 inst_path <- function (...) {
   path <- devtools::inst("promisedat")
-  if (is.null(path)) path <- file.path("inst")
+  if (is.null(path)) path <- file.path("inst") # ./inst or ../inst (see prev chunk)
   file.path(path, ...)
 }
 
@@ -46,7 +46,6 @@ inst_path("extdata")
 datasets <- c(my_cars = "cars", my_iris = "iris")
 
 my_env <- new.env()
-assign("file.path", file.path, envir = my_env)
 assign("inst_path", inst_path, envir = my_env)
 
 for (.name in names(datasets)) {
